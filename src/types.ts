@@ -1,6 +1,6 @@
 import { Commitment, Finality, Keypair, PublicKey, VersionedTransactionResponse } from "@solana/web3.js";
 
-export type IBuy = {
+export type IBuyTokens = {
   buyer: Keypair;
   mint: string;
   buyAmountSol: number;

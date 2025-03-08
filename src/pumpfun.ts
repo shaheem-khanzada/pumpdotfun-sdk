@@ -13,7 +13,7 @@ import {
   CompleteEvent,
   CreateEvent,
   CreateTokenMetadata,
-  IBuy,
+  IBuyTokens,
   PriorityFee,
   PumpFunEventHandlers,
   PumpFunEventType,
@@ -114,7 +114,36 @@ export class PumpFunSDK {
     return createResults;
   }
 
-  async buy(payload: IBuy): Promise<TransactionResult> {
+  async buy(
+    buyer: Keypair,
+    mint: PublicKey,
+    buyAmountSol: bigint,
+    slippageBasisPoints: bigint = 500n,
+    priorityFees?: PriorityFee,
+    commitment: Commitment = DEFAULT_COMMITMENT,
+    finality: Finality = DEFAULT_FINALITY
+  ): Promise<TransactionResult> {
+    let buyTx = await this.getBuyInstructionsBySolAmount(
+      buyer.publicKey,
+      mint,
+      buyAmountSol,
+      slippageBasisPoints,
+      commitment
+    );
+
+    let buyResults = await sendTx(
+      this.connection,
+      buyTx,
+      buyer.publicKey,
+      [buyer],
+      priorityFees,
+      commitment,
+      finality
+    );
+    return buyResults;
+  }
+
+  async buyTokens(payload: IBuyTokens): Promise<TransactionResult> {
     const { 
       slippagePercentage, 
       buyer, 
@@ -122,7 +151,7 @@ export class PumpFunSDK {
       buyAmountSol, 
       commitment = DEFAULT_COMMITMENT, 
       priorityFees, 
-      finality = DEFAULT_FINALITY
+      finality = DEFAULT_FINALITY  
     } = payload;
 
     const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
