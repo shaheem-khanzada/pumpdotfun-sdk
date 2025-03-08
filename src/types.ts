@@ -8,6 +8,7 @@ export type IBuyTokens = {
   priorityFees?: PriorityFee;
   commitment?: Commitment;
   finality?: Finality;
+  simulate?: boolean;
 };
 
 export type CreateTokenMetadata = {

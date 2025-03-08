@@ -37,7 +37,8 @@ export async function sendTx(
   signers: Keypair[],
   priorityFees?: PriorityFee,
   commitment: Commitment = DEFAULT_COMMITMENT,
-  finality: Finality = DEFAULT_FINALITY
+  finality: Finality = DEFAULT_FINALITY,
+  simulate: boolean = false,
 ): Promise<TransactionResult> {
   let newTx = new Transaction();
 
@@ -57,6 +58,22 @@ export async function sendTx(
 
   let versionedTx = await buildVersionedTx(connection, payer, newTx, commitment);
   versionedTx.sign(signers);
+
+  if (simulate) {
+    // Simulate the transaction instead of sending it
+    const simulationResult = await connection.simulateTransaction(versionedTx, { commitment });
+    console.log('simulationResult', simulationResult);
+    if (simulationResult.value.err) {
+      return {
+        success: false,
+        error: "Simulation failed",
+      };
+    }
+    return {
+      success: true,
+    };
+  }
+
 
   try {
     const sig = await connection.sendTransaction(versionedTx, {

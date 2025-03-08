@@ -151,7 +151,8 @@ export class PumpFunSDK {
       buyAmountSol, 
       commitment = DEFAULT_COMMITMENT, 
       priorityFees, 
-      finality = DEFAULT_FINALITY  
+      finality = DEFAULT_FINALITY,
+      simulate = false
     } = payload;
 
     const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
@@ -171,7 +172,8 @@ export class PumpFunSDK {
       [buyer],
       priorityFees,
       commitment,
-      finality
+      finality,
+      simulate
     );
     return buyResults;
   }
