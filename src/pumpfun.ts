@@ -3,6 +3,7 @@ import {
   Connection,
   Finality,
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
 } from "@solana/web3.js";
@@ -12,6 +13,7 @@ import {
   CompleteEvent,
   CreateEvent,
   CreateTokenMetadata,
+  IBuy,
   PriorityFee,
   PumpFunEventHandlers,
   PumpFunEventType,
@@ -112,48 +114,23 @@ export class PumpFunSDK {
     return createResults;
   }
 
-  async buy(
-    buyer: Keypair,
-    mint: PublicKey,
-    buyAmountSol: bigint,
-    slippageBasisPoints: bigint = 500n,
-    priorityFees?: PriorityFee,
-    commitment: Commitment = DEFAULT_COMMITMENT,
-    finality: Finality = DEFAULT_FINALITY
-  ): Promise<TransactionResult> {
-    let buyTx = await this.getBuyInstructionsBySolAmount(
-      buyer.publicKey,
-      mint,
-      buyAmountSol,
-      slippageBasisPoints,
-      commitment
-    );
+  async buy(payload: IBuy): Promise<TransactionResult> {
+    const { 
+      slippagePercentage, 
+      buyer, 
+      mint, 
+      buyAmountSol, 
+      commitment = DEFAULT_COMMITMENT, 
+      priorityFees, 
+      finality = DEFAULT_FINALITY
+    } = payload;
 
-    let buyResults = await sendTx(
-      this.connection,
-      buyTx,
-      buyer.publicKey,
-      [buyer],
-      priorityFees,
-      commitment,
-      finality
-    );
-    return buyResults;
-  }
+    const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
 
-  async buyV2(
-    buyer: Keypair,
-    mint: PublicKey,
-    buyAmountSol: bigint,
-    slippageBasisPoints: bigint = 500n,
-    priorityFees?: PriorityFee,
-    commitment: Commitment = DEFAULT_COMMITMENT,
-    finality: Finality = DEFAULT_FINALITY
-  ): Promise<TransactionResult> {
-    let buyTx = await this.getBuyInstructionsBySolAmount(
+    const buyTx = await this.getBuyInstructionsBySolAmount(
       buyer.publicKey,
-      mint,
-      buyAmountSol,
+      new PublicKey(mint),
+      BigInt(buyAmountSol * LAMPORTS_PER_SOL),
       slippageBasisPoints,
       commitment
     );
