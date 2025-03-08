@@ -141,6 +141,35 @@ export class PumpFunSDK {
     return buyResults;
   }
 
+  async buyV2(
+    buyer: Keypair,
+    mint: PublicKey,
+    buyAmountSol: bigint,
+    slippageBasisPoints: bigint = 500n,
+    priorityFees?: PriorityFee,
+    commitment: Commitment = DEFAULT_COMMITMENT,
+    finality: Finality = DEFAULT_FINALITY
+  ): Promise<TransactionResult> {
+    let buyTx = await this.getBuyInstructionsBySolAmount(
+      buyer.publicKey,
+      mint,
+      buyAmountSol,
+      slippageBasisPoints,
+      commitment
+    );
+
+    let buyResults = await sendTx(
+      this.connection,
+      buyTx,
+      buyer.publicKey,
+      [buyer],
+      priorityFees,
+      commitment,
+      finality
+    );
+    return buyResults;
+  }
+
   async sell(
     seller: Keypair,
     mint: PublicKey,
