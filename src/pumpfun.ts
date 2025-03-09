@@ -13,7 +13,8 @@ import {
   CompleteEvent,
   CreateEvent,
   CreateTokenMetadata,
-  IBuyTokens,
+  IBuyToken,
+  ISellToken,
   PriorityFee,
   PumpFunEventHandlers,
   PumpFunEventType,
@@ -143,7 +144,7 @@ export class PumpFunSDK {
     return buyResults;
   }
 
-  async buyTokens(payload: IBuyTokens): Promise<TransactionResult> {
+  async buyToken(payload: IBuyToken): Promise<TransactionResult> {
     const { 
       slippagePercentage, 
       buyer, 
@@ -176,6 +177,41 @@ export class PumpFunSDK {
       simulate
     );
     return buyResults;
+  }
+
+  async sellToken(payload: ISellToken): Promise<TransactionResult> {
+    const { 
+      slippagePercentage, 
+      seller, 
+      mint, 
+      sellTokenAmount, 
+      commitment = DEFAULT_COMMITMENT, 
+      priorityFees, 
+      finality = DEFAULT_FINALITY,
+      simulate = false
+    } = payload;
+
+    const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
+
+    let sellTx = await this.getSellInstructionsByTokenAmount(
+      seller.publicKey,
+      new PublicKey(mint),
+      sellTokenAmount,
+      slippageBasisPoints,
+      commitment
+    );
+
+    let sellResults = await sendTx(
+      this.connection,
+      sellTx,
+      seller.publicKey,
+      [seller],
+      priorityFees,
+      commitment,
+      finality,
+      simulate
+    );
+    return sellResults;
   }
 
   async sell(
