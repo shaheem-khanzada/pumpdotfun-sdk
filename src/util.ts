@@ -35,7 +35,7 @@ export async function sendTx(
   tx: Transaction,
   payer: PublicKey,
   signers: Keypair[],
-  priorityFees?: PriorityFee,
+  priorityFees?: PriorityFee | null,
   commitment: Commitment = DEFAULT_COMMITMENT,
   finality: Finality = DEFAULT_FINALITY,
   simulate: boolean = false,

@@ -6,7 +6,7 @@ export type IBuyToken = {
   buyAmountSol: number;
   slippagePercentage: number;
   pool: "pump" | "raydium";
-  priorityFees: PriorityFee;
+  priorityFees: PriorityFee | null;
   commitment?: Commitment;
   finality?: Finality;
   simulate?: boolean;
@@ -18,7 +18,7 @@ export type ISellToken = {
   sellTokenAmount: number;
   slippagePercentage: number;
   pool: "pump" | "raydium";
-  priorityFees: PriorityFee;
+  priorityFees: PriorityFee | null;
   commitment?: Commitment;
   finality?: Finality;
   simulate?: boolean;
