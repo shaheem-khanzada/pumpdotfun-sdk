@@ -14,11 +14,11 @@ export type IBuyToken = {
 export type ISellToken = {
   seller: Keypair;
   mint: string;
-  sellTokenAmount: bigint;
+  sellTokenAmount: number;
   slippagePercentage: number;
   priorityFees?: PriorityFee;
-  commitment: Commitment;
-  finality: Finality;
+  commitment?: Commitment;
+  finality?: Finality;
   simulate?: boolean;
 }
 

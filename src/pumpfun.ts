@@ -196,7 +196,7 @@ export class PumpFunSDK {
     let sellTx = await this.getSellInstructionsByTokenAmount(
       seller.publicKey,
       new PublicKey(mint),
-      sellTokenAmount,
+      BigInt(sellTokenAmount * LAMPORTS_PER_SOL),
       slippageBasisPoints,
       commitment
     );
