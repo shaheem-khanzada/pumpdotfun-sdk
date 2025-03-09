@@ -101,6 +101,54 @@ export async function sendTx(
   }
 }
 
+export async function sendVersionTx(
+  connection: Connection,
+  versionedTx: VersionedTransaction,
+  commitment: Commitment = DEFAULT_COMMITMENT,
+  finality: Finality = DEFAULT_FINALITY,
+  simulate: boolean = false,
+): Promise<TransactionResult> {
+
+  if (simulate) {
+    const simulationResult = await connection.simulateTransaction(versionedTx, { commitment });
+    if (simulationResult?.value?.err) {
+      return simulationResult;
+    }
+    return simulationResult;
+  }
+
+  try {
+    const sig = await connection.sendTransaction(versionedTx, {
+      skipPreflight: false,
+    });
+    console.log("sig:", `https://solscan.io/tx/${sig}`);
+
+    let txResult = await getTxDetails(connection, sig, commitment, finality);
+    if (!txResult) {
+      return {
+        success: false,
+        error: "Transaction failed",
+      };
+    }
+    return {
+      success: true,
+      signature: sig,
+      results: txResult,
+    };
+  } catch (e) {
+    if (e instanceof SendTransactionError) {
+      let ste = e as SendTransactionError;
+      console.log("SendTransactionError" + await ste.getLogs(connection));
+    } else {
+      console.error(e);
+    }
+    return {
+      error: e,
+      success: false,
+    };
+  }
+}
+
 export const buildVersionedTx = async (
   connection: Connection,
   payer: PublicKey,

@@ -6,6 +6,7 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import { Program, Provider } from "@coral-xyz/anchor";
 import { GlobalAccount } from "./globalAccount";
@@ -41,6 +42,7 @@ import {
   calculateWithSlippageBuy,
   calculateWithSlippageSell,
   sendTx,
+  sendVersionTx,
 } from "./util";
 import { PumpFun, IDL } from "./IDL";
 const PROGRAM_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
@@ -62,7 +64,7 @@ export class PumpFunSDK {
     this.connection = this.program.provider.connection;
   }
 
-  async createAndBuy (
+  async createAndBuy(
     creator: Keypair,
     mint: Keypair,
     createTokenMetadata: CreateTokenMetadata,
@@ -145,16 +147,52 @@ export class PumpFunSDK {
   }
 
   async buyToken(payload: IBuyToken): Promise<TransactionResult> {
-    const { 
-      slippagePercentage, 
-      buyer, 
-      mint, 
-      buyAmountSol, 
-      commitment = DEFAULT_COMMITMENT, 
-      priorityFees, 
+    const {
+      slippagePercentage,
+      buyer,
+      mint,
+      buyAmountSol,
+      commitment = DEFAULT_COMMITMENT,
+      priorityFees,
       finality = DEFAULT_FINALITY,
-      simulate = false
+      simulate = false,
+      pool
     } = payload;
+
+    if (pool === 'raydium') {
+      const raydiumPayload = {
+        publicKey: buyer.publicKey.toString(),
+        action: "buy",
+        mint,
+        denominatedInSol: "true",
+        amount: buyAmountSol,
+        slippage: slippagePercentage,
+        priorityFee: 0.00001,
+        pool: "raydium",
+      };
+
+      try {
+        const response = await fetch("https://pumpportal.fun/api/trade-local", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(raydiumPayload),
+        });
+
+        if (response.status !== 200) throw new Error(`Raydium buy request failed: ${response.statusText}`);
+
+        const data = await response.arrayBuffer();
+        const sellVersionTx = VersionedTransaction.deserialize(new Uint8Array(data));
+        const { blockhash } = await this.connection.getLatestBlockhash();
+
+        sellVersionTx.message.recentBlockhash = blockhash;
+        sellVersionTx.sign([buyer]);
+
+        return sendVersionTx(this.connection, sellVersionTx, commitment, finality, simulate);
+      } catch (error) {
+        console.error("Raydium Sell Error:", error);
+        throw error;
+      }
+    }
 
     const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
 
@@ -180,38 +218,65 @@ export class PumpFunSDK {
   }
 
   async sellToken(payload: ISellToken): Promise<TransactionResult> {
-    const { 
-      slippagePercentage, 
-      seller, 
-      mint, 
-      sellTokenAmount, 
-      commitment = DEFAULT_COMMITMENT, 
-      priorityFees, 
+    const {
+      slippagePercentage,
+      seller,
+      mint,
+      sellTokenAmount,
+      commitment = DEFAULT_COMMITMENT,
+      priorityFees,
       finality = DEFAULT_FINALITY,
-      simulate = false
+      simulate = false,
+      pool
     } = payload;
 
-    const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
+    if (pool === 'raydium') {
+      const raydiumPayload = {
+        publicKey: seller.publicKey.toString(),
+        action: "sell",
+        mint,
+        denominatedInSol: "false",
+        amount: sellTokenAmount,
+        slippage: slippagePercentage,
+        priorityFee: 0.00001,
+        pool: "raydium",
+      };
 
-    let sellTx = await this.getSellInstructionsByTokenAmount(
+      try {
+        const response = await fetch("https://pumpportal.fun/api/trade-local", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(raydiumPayload),
+        });
+
+        if (response.status !== 200) throw new Error(`Raydium sell request failed: ${response.statusText}`);
+
+        const data = await response.arrayBuffer();
+        const sellVersionTx = VersionedTransaction.deserialize(new Uint8Array(data));
+        const { blockhash } = await this.connection.getLatestBlockhash();
+
+        sellVersionTx.message.recentBlockhash = blockhash;
+        sellVersionTx.sign([seller]);
+
+        return sendVersionTx(this.connection, sellVersionTx, commitment, finality, simulate);
+      } catch (error) {
+        console.error("Raydium Sell Error:", error);
+        throw error;
+      }
+    }
+
+    const slippageBasisPoints = BigInt(slippagePercentage) * 100n;
+    const sellTokenAmountInDecimals = BigInt(sellTokenAmount * Math.pow(10, DEFAULT_DECIMALS));
+
+    const sellTx = await this.getSellInstructionsByTokenAmount(
       seller.publicKey,
       new PublicKey(mint),
-      BigInt(sellTokenAmount * LAMPORTS_PER_SOL),
+      sellTokenAmountInDecimals,
       slippageBasisPoints,
       commitment
     );
 
-    let sellResults = await sendTx(
-      this.connection,
-      sellTx,
-      seller.publicKey,
-      [seller],
-      priorityFees,
-      commitment,
-      finality,
-      simulate
-    );
-    return sellResults;
+    return sendTx(this.connection, sellTx, seller.publicKey, [seller], priorityFees, commitment, finality, simulate);
   }
 
   async sell(
@@ -468,7 +533,7 @@ export class PumpFunSDK {
   async createTokenMetadata(create: CreateTokenMetadata) {
     // Validate file
     if (!(create.file instanceof Blob)) {
-        throw new Error('File must be a Blob or File object');
+      throw new Error('File must be a Blob or File object');
     }
 
     let formData = new FormData();
@@ -482,40 +547,40 @@ export class PumpFunSDK {
     formData.append("showName", "true");
 
     try {
-        const request = await fetch("https://pump.fun/api/ipfs", {
-            method: "POST",
-            headers: {
-                'Accept': 'application/json',
-            },
-            body: formData,
-            credentials: 'same-origin'
-        });
+      const request = await fetch("https://pump.fun/api/ipfs", {
+        method: "POST",
+        headers: {
+          'Accept': 'application/json',
+        },
+        body: formData,
+        credentials: 'same-origin'
+      });
 
-        if (request.status === 500) {
-            // Try to get more error details
-            const errorText = await request.text();
-            throw new Error(`Server error (500): ${errorText || 'No error details available'}`);
-        }
+      if (request.status === 500) {
+        // Try to get more error details
+        const errorText = await request.text();
+        throw new Error(`Server error (500): ${errorText || 'No error details available'}`);
+      }
 
-        if (!request.ok) {
-            throw new Error(`HTTP error! status: ${request.status}`);
-        }
+      if (!request.ok) {
+        throw new Error(`HTTP error! status: ${request.status}`);
+      }
 
-        const responseText = await request.text();
-        if (!responseText) {
-            throw new Error('Empty response received from server');
-        }
+      const responseText = await request.text();
+      if (!responseText) {
+        throw new Error('Empty response received from server');
+      }
 
-        try {
-            return JSON.parse(responseText);
-        } catch (e) {
-            throw new Error(`Invalid JSON response: ${responseText}`);
-        }
+      try {
+        return JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
     } catch (error) {
-        console.error('Error in createTokenMetadata:', error);
-        throw error;
+      console.error('Error in createTokenMetadata:', error);
+      throw error;
     }
-}
+  }
   //EVENTS
   addEventListener<T extends PumpFunEventType>(
     eventType: T,

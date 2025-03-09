@@ -5,7 +5,8 @@ export type IBuyToken = {
   mint: string;
   buyAmountSol: number;
   slippagePercentage: number;
-  priorityFees?: PriorityFee;
+  pool: "pump" | "raydium";
+  priorityFees: PriorityFee;
   commitment?: Commitment;
   finality?: Finality;
   simulate?: boolean;
@@ -16,7 +17,8 @@ export type ISellToken = {
   mint: string;
   sellTokenAmount: number;
   slippagePercentage: number;
-  priorityFees?: PriorityFee;
+  pool: "pump" | "raydium";
+  priorityFees: PriorityFee;
   commitment?: Commitment;
   finality?: Finality;
   simulate?: boolean;
