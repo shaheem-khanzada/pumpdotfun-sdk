@@ -63,7 +63,9 @@ export async function sendTx(
     // Simulate the transaction instead of sending it
     const simulationResult = await connection.simulateTransaction(versionedTx, { commitment });
     console.log('simulationResult', simulationResult);
-    if (simulationResult.value.err) {
+    if (simulationResult?.value?.err) {
+      // @ts-ignore
+      console.log('simulationResult.value.err', simulationResult.value.err?.InstructionError);
       return {
         success: false,
         error: "Simulation failed",
