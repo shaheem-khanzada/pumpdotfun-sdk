@@ -61,12 +61,11 @@ export async function sendTx(
 
   if (simulate) {
     const simulationResult = await connection.simulateTransaction(versionedTx, { commitment });
+    console.log("simulationResult", simulationResult)
     if (simulationResult?.value?.err) {
       return simulationResult
     }
-    return {
-      success: true,
-    };
+    return simulationResult
   }
 
   try {
@@ -111,6 +110,7 @@ export async function sendVersionTx(
 
   if (simulate) {
     const simulationResult = await connection.simulateTransaction(versionedTx, { commitment });
+    console.log("simulationResult", simulationResult)
     if (simulationResult?.value?.err) {
       return simulationResult;
     }
