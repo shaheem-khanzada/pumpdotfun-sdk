@@ -69,7 +69,7 @@ export async function sendTx(
   }
 
   try {
-    const { blockhash } = await this.connection.getLatestBlockhash();
+    const { blockhash } = await connection.getLatestBlockhash();
     versionedTx.message.recentBlockhash = blockhash;
     const sig = await connection.sendTransaction(versionedTx, {
       skipPreflight: false,
@@ -95,10 +95,7 @@ export async function sendTx(
     } else {
       console.error(e);
     }
-    return {
-      error: e,
-      success: false,
-    };
+    throw e;
   }
 }
 
