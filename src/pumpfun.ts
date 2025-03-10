@@ -169,7 +169,7 @@ export class PumpFunSDK {
         amount: buyAmountSol,
         slippage: slippagePercentage,
         priorityFee: 0.00001,
-        pool: "raydium",
+        pool: "auto",
       };
 
       try {
