@@ -591,10 +591,13 @@ export class PumpFunSDK {
   ) => {
     try {
       let ata = getAssociatedTokenAddressSync(mintAddress, pubKey, allowOffCurve);
+      console.log('ata', ata);
       const balance = await connection.getTokenAccountBalance(ata, "processed");
       return balance;
-    } catch (e) {}
-    return null;
+    } catch (e) {
+      console.log('error', e);
+      throw e;
+    }
   };
   
   //EVENTS
