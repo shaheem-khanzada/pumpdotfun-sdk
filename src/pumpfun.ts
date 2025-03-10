@@ -240,7 +240,7 @@ export class PumpFunSDK {
         amount: sellTokenAmount,
         slippage: slippagePercentage,
         priorityFee: 0.00001,
-        pool: "raydium",
+        pool: "auto",
       };
 
       try {
