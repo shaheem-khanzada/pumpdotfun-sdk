@@ -1,4 +1,4 @@
-import { Commitment, Finality, Keypair, PublicKey, RpcResponseAndContext, SimulatedTransactionResponse, VersionedTransactionResponse } from "@solana/web3.js";
+import { Commitment, Finality, Keypair, PublicKey, RpcResponseAndContext, SimulatedTransactionResponse, TransactionSignature, VersionedTransactionResponse } from "@solana/web3.js";
 
 export type IBuyToken = {
   buyer: Keypair;
@@ -101,4 +101,4 @@ export type TransactionResult = | {
   error?: unknown;
   results?: VersionedTransactionResponse;
   success: boolean;
-} | RpcResponseAndContext<SimulatedTransactionResponse>;
+} | RpcResponseAndContext<SimulatedTransactionResponse> | TransactionSignature;

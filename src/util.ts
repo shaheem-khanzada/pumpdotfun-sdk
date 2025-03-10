@@ -149,7 +149,7 @@ export async function sendVersionTx(
     });
     console.log("sig:", `https://solscan.io/tx/${sig}`);
 
-    return await this.pollTransactionConfirmation(sig, connection);
+    return await pollTransactionConfirmation(sig, connection);
 
   } catch (e) {
     throw new Error(`Error sending transaction: ${e}`);
