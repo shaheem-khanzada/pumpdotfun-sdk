@@ -8,6 +8,7 @@ import {
   SendTransactionError,
   Transaction,
   TransactionMessage,
+  TransactionSignature,
   VersionedTransaction,
   VersionedTransactionResponse,
 } from "@solana/web3.js";
@@ -99,6 +100,32 @@ export async function sendTx(
   }
 }
 
+const pollTransactionConfirmation = (txtSig: TransactionSignature, connection: Connection): Promise<TransactionSignature> => {
+  // 15 second timeout
+  const timeout = 15000;
+  // 5 second retry interval
+  const interval = 5000;
+  let elapsed = 0;
+
+  return new Promise<TransactionSignature>((resolve, reject) => {
+    const intervalId = setInterval(async () => {
+      elapsed += interval;
+
+      if (elapsed >= timeout) {
+        clearInterval(intervalId);
+        reject(new Error(`Transaction ${txtSig}'s confirmation timed out`));
+      }
+
+      const status = await connection.getSignatureStatuses([txtSig]);
+
+      if (status?.value[0]?.confirmationStatus === "confirmed") {
+        clearInterval(intervalId);
+        resolve(txtSig);
+      }
+    }, interval);
+  });
+}
+
 export async function sendVersionTx(
   connection: Connection,
   versionedTx: VersionedTransaction,
@@ -122,29 +149,10 @@ export async function sendVersionTx(
     });
     console.log("sig:", `https://solscan.io/tx/${sig}`);
 
-    let txResult = await getTxDetails(connection, sig, commitment, finality);
-    if (!txResult) {
-      return {
-        success: false,
-        error: "Transaction failed",
-      };
-    }
-    return {
-      success: true,
-      signature: sig,
-      results: txResult,
-    };
+    return await this.pollTransactionConfirmation(sig, connection);
+
   } catch (e) {
-    if (e instanceof SendTransactionError) {
-      let ste = e as SendTransactionError;
-      console.log("SendTransactionError" + await ste.getLogs(connection));
-    } else {
-      console.error(e);
-    }
-    return {
-      error: e,
-      success: false,
-    };
+    throw new Error(`Error sending transaction: ${e}`);
   }
 }
 
@@ -173,7 +181,7 @@ export const getTxDetails = async (
   finality: Finality = DEFAULT_FINALITY
 ): Promise<VersionedTransactionResponse | null> => {
   const latestBlockHash = await connection.getLatestBlockhash();
-  await connection.confirmTransaction(
+  const data = await connection.confirmTransaction(
     {
       blockhash: latestBlockHash.blockhash,
       lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
