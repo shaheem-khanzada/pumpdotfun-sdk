@@ -33,6 +33,7 @@ import {
   createAssociatedTokenAccountInstruction,
   getAccount,
   getAssociatedTokenAddress,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { BondingCurveAccount } from "./bondingCurveAccount";
 import { BN } from "bn.js";
@@ -581,6 +582,21 @@ export class PumpFunSDK {
       throw error;
     }
   }
+
+  getSPLBalance = async (
+    connection: Connection,
+    mintAddress: PublicKey,
+    pubKey: PublicKey,
+    allowOffCurve: boolean = false
+  ) => {
+    try {
+      let ata = getAssociatedTokenAddressSync(mintAddress, pubKey, allowOffCurve);
+      const balance = await connection.getTokenAccountBalance(ata, "processed");
+      return balance;
+    } catch (e) {}
+    return null;
+  };
+  
   //EVENTS
   addEventListener<T extends PumpFunEventType>(
     eventType: T,
