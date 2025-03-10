@@ -231,7 +231,7 @@ export class PumpFunSDK {
       pool
     } = payload;
 
-    if (pool === 'raydium') {
+    if (pool) {
       const raydiumPayload = {
         publicKey: seller.publicKey.toString(),
         action: "sell",
